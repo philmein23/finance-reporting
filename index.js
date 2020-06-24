@@ -20,36 +20,34 @@ function get_options(statement_type) {
     handler: async (request, reply) => {
       let symbol = request.params.symbol;
       let period = "annual";
+      let url = `${DOMAIN_URI}/${statement_type}/${symbol}?period=${period}&apikey=${API_KEY}`;
+
       const { redis } = fastify;
 
       if (request.query.period) {
         period = request.query.period;
       }
 
-      let url = `${DOMAIN_URI}/${statement_type}/${symbol}?period=${period}&apikey=${API_KEY}`;
-      let result = await fetch(url);
-      let data = await result.json();
+      let does_exist = await redis.exists(`${statement_type}-${symbol}`);
 
-      return redis.exists(`${statement_type}-${symbol}`).then((does_exist) => {
-        if (does_exist) {
-          console.log(`KEY FOUND IN CACHE ${statement_type} ${symbol}`);
-          return redis
-            .get(`${statement_type}-${symbol}`)
-            .then((data) => JSON.parse(data));
-        }
+      if (does_exist) {
+        console.log(`KEY FOUND IN CACHE ${statement_type} ${symbol}`);
+        let data = await redis.get(`${statement_type}-${symbol}`);
+        return JSON.parse(data); // dserialize data before returning it
+      }
 
-        console.log("KEY NOT YET STORED IN CACHE");
-        return redis
-          .set(`${statement_type}-${symbol}`, JSON.stringify(data))
-          .then((status) => {
-            console.log(`STATUS: ${status}`);
+      try {
+        console.log("KEY NOT FOUND IN CACHE...");
 
-            return data;
-          })
-          .catch((error) => {
-            console.error(error);
-          });
-      });
+        let result = await fetch(url);
+        let data = await result.json();
+
+        await redis.set(`${statement_type}-${symbol}`, JSON.stringify(data)); // serialize data before caching it
+
+        return data;
+      } catch (err) {
+        console.error(error);
+      }
     },
   };
 }
