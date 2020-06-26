@@ -22,7 +22,7 @@ function get_options(statement_type) {
       },
     },
     handler: async (request, reply) => {
-      let symbol = request.params.symbol;
+      let symbol = request.params.symbol.toUpperCase();
       let period = "annual";
       let url = `${DOMAIN_URI}/${statement_type}/${symbol}?period=${period}&apikey=${API_KEY}`;
 
@@ -56,7 +56,7 @@ function get_options(statement_type) {
   };
 }
 
-fastify.get("/home", (req, reply) => {
+fastify.get("/", (req, reply) => {
   reply.sendFile("index.html");
 });
 

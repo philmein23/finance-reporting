@@ -1,44 +1,59 @@
 <script>
-  export let name;
+  export let symbol;
+  let income_statements = [];
+  let dates = [];
+  let metrics = [];
 
-  name = "Phillip Nguyen DERP COOL";
+  const camel2title = (camelCase) =>
+    camelCase
+      .replace(/([A-Z])/g, (match) => ` ${match}`)
+      .replace(/^./, (match) => match.toUpperCase());
 
   async function getIncomeStatement(symbol) {
     let result = await fetch(`/income-statement/${symbol}`);
-    let data = await result.json();
-    console.log(data);
+    return await result.json();
   }
 
-  getIncomeStatement("AAPL");
+  function onSearch(e) {
+    e.preventDefault();
+
+    return getIncomeStatement(symbol).then((data) => {
+      income_statements = data;
+
+      if (dates.length === 0 && metrics.length === 0) {
+        dates = data.map((dp) => dp.date);
+        metrics = Object.keys(data[0]).map((metric) => camel2title(metric));
+      }
+
+      console.log(income_statements);
+      console.log(metrics);
+    });
+  }
 </script>
 
 <style>
-  main {
-    text-align: center;
-    padding: 1em;
-    max-width: 240px;
-    margin: 0 auto;
+  .flex-column {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
   }
 
-  h1 {
-    color: #ff3e00;
-    text-transform: uppercase;
-    font-size: 4em;
-    font-weight: 100;
-  }
-
-  @media (min-width: 640px) {
-    main {
-      max-width: none;
-    }
+  .flex-column > div {
+    margin: 4px 0;
   }
 </style>
 
 <main>
-  <h1>Hello {name}!</h1>
-  <p>
-    Visit the
-    <a href="https://svelte.dev/tutorial">Svelte tutorial</a>
-    to learn how to build Svelte apps.
-  </p>
+  <h1>Income Statements</h1>
+  <section>
+    <form>
+      <input type="text" bind:value={symbol} />
+      <button on:click={onSearch}>Search</button>
+    </form>
+    <div class="flex-column">
+      {#each metrics as metric}
+        <div>{metric}</div>
+      {/each}
+    </div>
+  </section>
 </main>
