@@ -3,8 +3,12 @@ const fastify = require("fastify")({
   logger: true,
 });
 const fetch = require("node-fetch");
+const path = require("path");
 require("dotenv").config();
 
+fastify.register(require("fastify-static"), {
+  root: path.join(__dirname, "/client_side/public"),
+});
 fastify.register(require("fastify-redis"), { host: "localhost" });
 
 const API_KEY = process.env.FINANCE_API_KEY;
@@ -18,7 +22,7 @@ function get_options(statement_type) {
       },
     },
     handler: async (request, reply) => {
-      let symbol = request.params.symbol;
+      let symbol = request.params.symbol.toUpperCase();
       let period = "annual";
       let url = `${DOMAIN_URI}/${statement_type}/${symbol}?period=${period}&apikey=${API_KEY}`;
 
@@ -51,6 +55,10 @@ function get_options(statement_type) {
     },
   };
 }
+
+fastify.get("/", (req, reply) => {
+  reply.sendFile("index.html");
+});
 
 // income statements
 fastify.get("/income-statement/:symbol", get_options("income-statement"));
